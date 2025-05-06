@@ -8,8 +8,8 @@ import (
 
 // DIE represents a Debug Information Entry with its attributes
 type DIE struct {
-	Entry    *dwarf.Entry
-	Children []*DIE
+	Entry    *dwarf.Entry `json:"Entry"`
+	Children []*DIE       `json:"Children"`
 }
 
 // parseDIE recursively parses a DIE and its children

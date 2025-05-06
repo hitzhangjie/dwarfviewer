@@ -1,0 +1,32 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>DWARF DIE Viewer</title>
+    <link rel="stylesheet" href="/static/styles.css">
+</head>
+
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>DWARF DIE Viewer</h1>
+            <div class="search-box">
+                <input type="text" id="searchInput" placeholder="Search DIEs...">
+                <button onclick="searchDIEs()">Search</button>
+            </div>
+        </div>
+        <div class="content">
+            <div class="die-list" id="dieList">
+                <!-- DIE list will be populated here -->
+            </div>
+            <div class="die-details" id="dieDetails">
+                <!-- Selected DIE details will be shown here -->
+            </div>
+        </div>
+    </div>
+    <script src="/static/script.js"></script>
+</body>
+
+</html>
