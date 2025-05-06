@@ -357,7 +357,7 @@ function showDieDetails(die, parentDie = null) {
         fieldsSection.className = 'fields-section';
 
         const fieldsHeader = document.createElement('h3');
-        fieldsHeader.textContent = `Fields (${die.Entry.Field.length})`;
+        fieldsHeader.textContent = `Fields: (len=${die.Entry.Field.length})`;
         fieldsSection.appendChild(fieldsHeader);
 
         die.Entry.Field.forEach(field => {
@@ -438,7 +438,7 @@ function showDieDetails(die, parentDie = null) {
         childrenSection.className = 'children-section';
 
         const childrenHeader = document.createElement('h3');
-        childrenHeader.textContent = `Children (${die.Children.length})`;
+        childrenHeader.textContent = `Children: (len=${die.Children.length})`;
         childrenSection.appendChild(childrenHeader);
 
         die.Children.forEach(child => {
