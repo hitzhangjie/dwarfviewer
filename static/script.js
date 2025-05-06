@@ -202,6 +202,14 @@ let dieNavigationPath = []; // Track the navigation path
 // Load DIEs when the page loads
 window.onload = async function () {
     await loadDIEs();
+
+    // Add event listener for Enter key on search input
+    const searchInput = document.getElementById('searchInput');
+    searchInput.addEventListener('keypress', function (event) {
+        if (event.key === 'Enter') {
+            searchDIEs();
+        }
+    });
 };
 
 // Load DIEs from the server
