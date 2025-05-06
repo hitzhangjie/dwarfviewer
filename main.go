@@ -61,7 +61,27 @@ func main() {
 		rootDIEs = append(rootDIEs, die)
 	}
 
-	// If pattern is provided, filter DIEs
+	// webui mode
+	if *webUI {
+		// Setup web server
+		http.HandleFunc("/", serveIndex)
+		http.HandleFunc("/api/dies", func(w http.ResponseWriter, r *http.Request) {
+			serveDIEs(w, r, rootDIEs, dwarfData)
+		})
+		http.HandleFunc("/api/dies/search", func(w http.ResponseWriter, r *http.Request) {
+			serveSearch(w, r, rootDIEs, dwarfData)
+		})
+		http.Handle("/static/", http.StripPrefix("/static/", http.FileServer(http.Dir("static"))))
+
+		fmt.Println("Starting web server at http://localhost:8080")
+		if err := http.ListenAndServe(":8080", nil); err != nil {
+			fmt.Printf("Error starting web server: %v\n", err)
+			os.Exit(1)
+		}
+		return
+	}
+
+	// termui mode
 	var matches []*DIE
 	if *pattern != "" {
 		re, err := regexp.Compile(*pattern)
@@ -80,28 +100,11 @@ func main() {
 		matches = rootDIEs
 	}
 
-	// display the matched DIEs
-	if *webUI {
-		// Setup web server
-		http.HandleFunc("/", serveIndex)
-		http.HandleFunc("/api/dies", func(w http.ResponseWriter, r *http.Request) {
-			serveDIEs(w, r, matches, dwarfData)
-		})
-		http.Handle("/static/", http.StripPrefix("/static/", http.FileServer(http.Dir("static"))))
-
-		fmt.Println("Starting web server at http://localhost:8080")
-		if err := http.ListenAndServe(":8080", nil); err != nil {
-			fmt.Printf("Error starting web server: %v\n", err)
-			os.Exit(1)
-		}
-		return
-	} else {
-		fmt.Printf("Found %d matching DIEs:\n", len(matches))
-		for i, die := range matches {
-			printDIE(die, 0, dwarfData)
-			if i < len(matches)-1 {
-				fmt.Println("---")
-			}
+	fmt.Printf("Found %d matching DIEs:\n", len(matches))
+	for i, die := range matches {
+		printDIE(die, 0, dwarfData)
+		if i < len(matches)-1 {
+			fmt.Println("---")
 		}
 	}
 }
@@ -112,6 +115,34 @@ func serveIndex(w http.ResponseWriter, r *http.Request) {
 
 func serveDIEs(w http.ResponseWriter, r *http.Request, dies []*DIE, dwarfData *dwarf.Data) {
 	jsonData, err := json.Marshal(dies)
+	if err != nil {
+		http.Error(w, "Error converting DIEs to JSON", http.StatusInternalServerError)
+		return
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	w.Write(jsonData)
+}
+
+func serveSearch(w http.ResponseWriter, r *http.Request, dies []*DIE, dwarfData *dwarf.Data) {
+	query := r.URL.Query().Get("q")
+	if query == "" {
+		serveDIEs(w, r, dies, dwarfData)
+		return
+	}
+
+	re, err := regexp.Compile(query)
+	if err != nil {
+		http.Error(w, "Invalid search pattern", http.StatusBadRequest)
+		return
+	}
+
+	var matches []*DIE
+	for _, die := range dies {
+		matches = append(matches, filterDIE(die, re)...)
+	}
+
+	jsonData, err := json.Marshal(matches)
 	if err != nil {
 		http.Error(w, "Error converting DIEs to JSON", http.StatusInternalServerError)
 		return

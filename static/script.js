@@ -18,25 +18,17 @@ async function loadDIEs() {
 }
 
 // Search DIEs based on input
-function searchDIEs() {
+async function searchDIEs() {
     const searchInput = document.getElementById('searchInput');
     const pattern = searchInput.value.trim();
 
-    if (pattern === '') {
-        displayDIEs(dies);
-        return;
+    try {
+        const response = await fetch(`/api/dies/search?q=${encodeURIComponent(pattern)}`);
+        const filteredDies = await response.json();
+        displayDIEs(filteredDies);
+    } catch (error) {
+        console.error('Error searching DIEs:', error);
     }
-
-    const filteredDies = dies.filter(die => {
-        return die.Entry.Field.some(field => {
-            if (field.Attr === 'Name' && typeof field.Val === 'string') {
-                return field.Val.toLowerCase().includes(pattern.toLowerCase());
-            }
-            return false;
-        });
-    });
-
-    displayDIEs(filteredDies);
 }
 
 // Display DIEs in the list
