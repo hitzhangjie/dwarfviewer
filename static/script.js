@@ -297,7 +297,14 @@ function showDieDetails(die, parentDie = null) {
         // Add click handler for navigation
         if (index < dieNavigationPath.length - 1) {
             breadcrumb.className += ' clickable';
-            breadcrumb.onclick = () => showDieDetails(pathDie);
+            breadcrumb.onclick = () => {
+                // Get the parent DIE for the clicked node
+                const parentDie = index > 0 ? dieNavigationPath[index - 1] : null;
+                // Update the navigation path
+                dieNavigationPath = dieNavigationPath.slice(0, index + 1);
+                // Show the DIE details with its parent
+                showDieDetails(pathDie, parentDie);
+            };
         }
 
         dieNavigation.appendChild(breadcrumb);
