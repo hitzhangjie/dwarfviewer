@@ -364,10 +364,63 @@ function showDieDetails(die, parentDie = null) {
             const attrElement = document.createElement('div');
             attrElement.className = 'attribute';
             const attrName = DWARF_ATTRS[field.Attr] || `Unknown Attr (${field.Attr})`;
-            attrElement.innerHTML = `
-                <span class="attribute-name">${attrName}:</span>
-                <span class="attribute-value">${field.Val}</span>
-            `;
+
+            // Create a container for the attribute
+            const attrContainer = document.createElement('div');
+            attrContainer.className = 'attribute-container';
+
+            // Create the attribute name and value
+            const attrNameSpan = document.createElement('span');
+            attrNameSpan.className = 'attribute-name';
+            attrNameSpan.textContent = `${attrName}:`;
+
+            const attrValueSpan = document.createElement('span');
+            attrValueSpan.className = 'attribute-value';
+            attrValueSpan.textContent = field.Val;
+
+            attrContainer.appendChild(attrNameSpan);
+            attrContainer.appendChild(attrValueSpan);
+
+            // If this is a DW_AT_type attribute, add an expandable arrow
+            if (field.Attr === 0x49) { // DW_AT_type
+                const expandButton = document.createElement('span');
+                expandButton.className = 'expand-button';
+                expandButton.textContent = '▶';
+                expandButton.onclick = async (e) => {
+                    e.stopPropagation();
+                    const isExpanded = expandButton.textContent === '▼';
+
+                    if (!isExpanded) {
+                        // Fetch the referenced DIE
+                        try {
+                            const response = await fetch(`/api/dies/type/${field.Val}`);
+                            const referencedDie = await response.json();
+
+                            // Create a container for the referenced DIE
+                            const referencedContainer = document.createElement('div');
+                            referencedContainer.className = 'referenced-die';
+
+                            // Show the referenced DIE details
+                            showDieDetails(referencedDie, die);
+
+                            // Update the expand button
+                            expandButton.textContent = '▼';
+                        } catch (error) {
+                            console.error('Error fetching referenced DIE:', error);
+                        }
+                    } else {
+                        // Collapse the referenced DIE
+                        const referencedContainer = attrContainer.nextElementSibling;
+                        if (referencedContainer && referencedContainer.className === 'referenced-die') {
+                            referencedContainer.remove();
+                        }
+                        expandButton.textContent = '▶';
+                    }
+                };
+                attrContainer.appendChild(expandButton);
+            }
+
+            attrElement.appendChild(attrContainer);
             fieldsSection.appendChild(attrElement);
         });
 

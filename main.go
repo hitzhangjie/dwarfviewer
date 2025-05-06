@@ -8,6 +8,7 @@ import (
 	"net/http"
 	"os"
 	"regexp"
+	"strconv"
 
 	"github.com/hitzhangjie/dwarfviewer/parser"
 )
@@ -71,6 +72,9 @@ func main() {
 		})
 		http.HandleFunc("/api/dies/search", func(w http.ResponseWriter, r *http.Request) {
 			serveSearch(w, r, rootDIEs, dwarfData)
+		})
+		http.HandleFunc("/api/dies/type/", func(w http.ResponseWriter, r *http.Request) {
+			serveTypeDIE(w, r, rootDIEs, dwarfData)
 		})
 		http.Handle("/static/", http.StripPrefix("/static/", http.FileServer(http.Dir("static"))))
 
@@ -146,6 +150,49 @@ func serveSearch(w http.ResponseWriter, r *http.Request, dies []*DIE, dwarfData 
 	jsonData, err := json.Marshal(matches)
 	if err != nil {
 		http.Error(w, "Error converting DIEs to JSON", http.StatusInternalServerError)
+		return
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	w.Write(jsonData)
+}
+
+// serveTypeDIE handles requests for DIEs referenced by type
+func serveTypeDIE(w http.ResponseWriter, r *http.Request, dies []*DIE, dwarfData *dwarf.Data) {
+	// Extract the type offset from the URL
+	typeOffset := r.URL.Path[len("/api/dies/type/"):]
+	offset, err := strconv.ParseUint(typeOffset, 10, 64)
+	if err != nil {
+		http.Error(w, "Invalid type offset", http.StatusBadRequest)
+		return
+	}
+
+	// Find the DIE with the matching offset
+	var foundDie *DIE
+
+NextRootDIE:
+	for _, die := range dies {
+		if die.Entry.Offset == dwarf.Offset(offset) {
+			foundDie = die
+			break
+		}
+		for _, child := range die.Children {
+			if child.Entry.Offset == dwarf.Offset(offset) {
+				foundDie = child
+				break NextRootDIE
+			}
+		}
+	}
+
+	if foundDie == nil {
+		http.Error(w, "DIE not found", http.StatusNotFound)
+		return
+	}
+
+	// Return the found DIE as JSON
+	jsonData, err := json.Marshal(foundDie)
+	if err != nil {
+		http.Error(w, "Error converting DIE to JSON", http.StatusInternalServerError)
 		return
 	}
 

@@ -132,6 +132,34 @@ body {
     border-color: #2196f3;
 }
 
+.attribute-container {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.expand-button {
+    cursor: pointer;
+    color: #666;
+    font-size: 12px;
+    padding: 2px 4px;
+    border-radius: 3px;
+    transition: background-color 0.2s;
+}
+
+.expand-button:hover {
+    background-color: #e0e0e0;
+}
+
+.referenced-die {
+    margin-left: 20px;
+    padding: 10px;
+    border-left: 2px solid #2196f3;
+    background-color: #f8f9fa;
+    margin-top: 5px;
+    margin-bottom: 5px;
+}
+
 .attribute {
     margin: 8px 0;
     padding: 4px;
@@ -142,6 +170,10 @@ body {
     font-weight: bold;
     color: #666;
     margin-right: 8px;
+}
+
+.attribute-value {
+    color: #333;
 }
 
 .children-section {
