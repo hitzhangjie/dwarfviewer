@@ -12,16 +12,15 @@ body {
 }
 
 .container {
-    max-width: 1400px;
+    max-width: 1200px;
     margin: 0 auto;
     padding: 20px;
 }
 
 .header {
-    background-color: #fff;
-    padding: 20px;
-    border-radius: 8px;
-    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
     margin-bottom: 20px;
 }
 
@@ -58,32 +57,74 @@ body {
 }
 
 .content {
-    display: grid;
-    grid-template-columns: 1fr 1fr;
+    display: flex;
     gap: 20px;
-    height: calc(100vh - 180px);
+    height: calc(100vh - 100px);
 }
 
-.die-list,
-.die-details {
-    background-color: #fff;
-    padding: 20px;
-    border-radius: 8px;
-    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+.die-list {
+    width: 300px;
+    border: 1px solid #ccc;
+    border-radius: 4px;
     overflow-y: auto;
+    padding: 10px;
+}
+
+.die-details {
+    flex: 1;
+    border: 1px solid #ccc;
+    border-radius: 4px;
+    padding: 10px;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+}
+
+.die-navigation {
+    padding: 10px;
+    border-bottom: 1px solid #ccc;
+    margin-bottom: 10px;
+    background-color: #f5f5f5;
+    border-radius: 4px;
+}
+
+.navigation-item {
+    display: inline-block;
+    padding: 4px 8px;
+    margin: 0 2px;
+    border-radius: 4px;
+}
+
+.navigation-item.clickable {
+    cursor: pointer;
+    color: #0066cc;
+}
+
+.navigation-item.clickable:hover {
+    background-color: #e0e0e0;
+}
+
+.navigation-separator {
+    color: #666;
+    margin: 0 4px;
+}
+
+.die-content {
+    flex: 1;
+    overflow-y: auto;
+    padding: 10px;
 }
 
 .die-item {
-    padding: 10px;
-    border: 1px solid #eee;
-    margin-bottom: 10px;
+    padding: 8px;
+    margin: 4px 0;
+    border: 1px solid #ddd;
     border-radius: 4px;
     cursor: pointer;
-    transition: background-color 0.2s;
 }
 
 .die-item:hover {
-    background-color: #f8f9fa;
+    background-color: #f0f0f0;
 }
 
 .die-item.selected {
@@ -91,30 +132,40 @@ body {
     border-color: #2196f3;
 }
 
-.die-details h2 {
-    margin-bottom: 15px;
-    color: #2c3e50;
-}
-
 .attribute {
-    margin-bottom: 8px;
-    padding: 8px;
-    background-color: #f8f9fa;
-    border-radius: 4px;
+    margin: 8px 0;
+    padding: 4px;
+    border-bottom: 1px solid #eee;
 }
 
 .attribute-name {
     font-weight: bold;
-    color: #2c3e50;
+    color: #666;
+    margin-right: 8px;
 }
 
 .children-section {
     margin-top: 20px;
-    padding-top: 20px;
-    border-top: 1px solid #eee;
+    padding-top: 10px;
+    border-top: 1px solid #ccc;
 }
 
-.children-section h3 {
-    margin-bottom: 10px;
-    color: #2c3e50;
+input[type="text"] {
+    padding: 8px;
+    border: 1px solid #ccc;
+    border-radius: 4px;
+    width: 200px;
+}
+
+button {
+    padding: 8px 16px;
+    background-color: #2196f3;
+    color: white;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+}
+
+button:hover {
+    background-color: #1976d2;
 }

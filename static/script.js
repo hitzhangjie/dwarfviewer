@@ -197,6 +197,7 @@ const DWARF_ATTRS = {
 
 let dies = [];
 let selectedDie = null;
+let dieNavigationPath = []; // Track the navigation path
 
 // Load DIEs when the page loads
 window.onload = async function () {
@@ -254,9 +255,64 @@ function displayDIEs(diesToShow) {
 }
 
 // Show DIE details
-function showDieDetails(die) {
+function showDieDetails(die, parentDie = null) {
     const dieDetails = document.getElementById('dieDetails');
-    dieDetails.innerHTML = '';
+    const dieContent = document.getElementById('dieContent');
+    const dieNavigation = document.getElementById('dieNavigation');
+
+    // Update navigation path
+    if (parentDie) {
+        // If we're navigating to a child DIE
+        const existingIndex = dieNavigationPath.findIndex(d => d === die);
+        if (existingIndex !== -1) {
+            // If we're going back to a previously visited DIE
+            dieNavigationPath = dieNavigationPath.slice(0, existingIndex + 1);
+        } else {
+            // Add new DIE to the path
+            dieNavigationPath.push(die);
+        }
+    } else {
+        // If we're starting fresh or clicking from the main list
+        dieNavigationPath = [die];
+    }
+
+    // Update navigation breadcrumbs
+    dieNavigation.innerHTML = '';
+    dieNavigationPath.forEach((pathDie, index) => {
+        const breadcrumb = document.createElement('span');
+        breadcrumb.className = 'navigation-item';
+
+        // Find the name attribute if it exists
+        const nameAttr = pathDie.Entry.Field.find(field => field.Attr === 0x03);
+        const tagName = DWARF_TAGS[pathDie.Entry.Tag] || `Unknown Tag (${pathDie.Entry.Tag})`;
+
+        // Create display text combining tag and name
+        let displayText = tagName;
+        if (nameAttr) {
+            displayText += `: ${nameAttr.Val}`;
+        }
+
+        breadcrumb.textContent = displayText;
+
+        // Add click handler for navigation
+        if (index < dieNavigationPath.length - 1) {
+            breadcrumb.className += ' clickable';
+            breadcrumb.onclick = () => showDieDetails(pathDie);
+        }
+
+        dieNavigation.appendChild(breadcrumb);
+
+        // Add separator if not the last item
+        if (index < dieNavigationPath.length - 1) {
+            const separator = document.createElement('span');
+            separator.className = 'navigation-separator';
+            separator.textContent = ' > ';
+            dieNavigation.appendChild(separator);
+        }
+    });
+
+    // Clear and update content
+    dieContent.innerHTML = '';
 
     // Remove selected class from all items
     document.querySelectorAll('.die-item').forEach(item => {
@@ -265,8 +321,8 @@ function showDieDetails(die) {
 
     // Add selected class to clicked item
     const selectedItem = Array.from(document.querySelectorAll('.die-item')).find(item => {
-        let attr = die.Entry.Field.find(field => DWARF_ATTRS[field.Attr] === 'DW_Attr_name')
-        item.textContent === attr?.Val || DWARF_TAGS[die.Entry.Tag] || `Unknown Tag (${die.Entry.Tag})`
+        let attr = die.Entry.Field.find(field => field.Attr === 0x03);
+        return item.textContent === (attr?.Val ? `${DWARF_TAGS[die.Entry.Tag]}: ${attr.Val}` : DWARF_TAGS[die.Entry.Tag]);
     });
     if (selectedItem) {
         selectedItem.classList.add('selected');
@@ -304,17 +360,23 @@ function showDieDetails(die) {
         die.Children.forEach(child => {
             const childElement = document.createElement('div');
             childElement.className = 'die-item';
-            childElement.onclick = () => showDieDetails(child);
+            childElement.onclick = () => showDieDetails(child, die);
 
-            const childName = child.Entry.Field.find(field => field.Attr === 'Name')?.Val ||
-                DWARF_TAGS[child.Entry.Tag] || `Unknown Tag (${child.Entry.Tag})`;
-            childElement.textContent = childName;
+            const childNameAttr = child.Entry.Field.find(field => field.Attr === 0x03);
+            const childTagName = DWARF_TAGS[child.Entry.Tag] || `Unknown Tag (${child.Entry.Tag})`;
+
+            let displayText = childTagName;
+            if (childNameAttr) {
+                displayText += `: ${childNameAttr.Val}`;
+            }
+
+            childElement.textContent = displayText;
             childrenSection.appendChild(childElement);
         });
 
         detailsContent.appendChild(childrenSection);
     }
 
-    dieDetails.appendChild(detailsContent);
+    dieContent.appendChild(detailsContent);
     selectedDie = die;
 } 
