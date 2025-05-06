@@ -2,37 +2,38 @@ package main
 
 import (
 	"debug/dwarf"
-	"debug/elf"
 	"encoding/json"
 	"flag"
 	"fmt"
 	"net/http"
 	"os"
 	"regexp"
+
+	"github.com/hitzhangjie/dwarfviewer/parser"
 )
 
 func main() {
 	// Parse command line arguments
-	filePath := flag.String("file", "", "Path to the ELF file")
+	filePath := flag.String("file", "", "Path to the binary file")
 	pattern := flag.String("pattern", "", "Regex pattern to filter DIEs")
 	webUI := flag.Bool("webui", false, "Display DIEs in web interface")
 	flag.Parse()
 
 	if *filePath == "" {
-		fmt.Println("Please provide an ELF file path using -file flag")
+		fmt.Println("Please provide a binary file path using -file flag")
 		os.Exit(1)
 	}
 
-	// Open and parse the ELF file
-	file, err := elf.Open(*filePath)
+	// 创建并打开文件解析器
+	fileParser, err := parser.NewParser(*filePath)
 	if err != nil {
-		fmt.Printf("Error opening ELF file: %v\n", err)
+		fmt.Printf("Error creating file parser: %v\n", err)
 		os.Exit(1)
 	}
-	defer file.Close()
+	defer fileParser.Close()
 
-	// Get DWARF data
-	dwarfData, err := file.DWARF()
+	// 获取DWARF数据
+	dwarfData, err := fileParser.GetDWARF()
 	if err != nil {
 		fmt.Printf("Error reading DWARF data: %v\n", err)
 		os.Exit(1)

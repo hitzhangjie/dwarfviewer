@@ -41,6 +41,34 @@ func parseDIE(reader *dwarf.Reader, entry *dwarf.Entry) (*DIE, error) {
 	return die, nil
 }
 
+func Indent(indent string) string {
+	return indent + "  "
+}
+
+// filterDIE recursively filters DIEs based on a regex pattern
+func filterDIE(die *DIE, pattern *regexp.Regexp) []*DIE {
+	var matches []*DIE
+
+	// Check if current DIE matches
+	for _, field := range die.Entry.Field {
+		if field.Attr == dwarf.AttrName {
+			if name, ok := field.Val.(string); ok {
+				if pattern.MatchString(name) {
+					matches = append(matches, die)
+					break
+				}
+			}
+		}
+	}
+
+	// Recursively check children
+	for _, child := range die.Children {
+		matches = append(matches, filterDIE(child, pattern)...)
+	}
+
+	return matches
+}
+
 // printDIE recursively prints a DIE and its attributes
 func printDIE(die *DIE, depth int, data *dwarf.Data) {
 	indent := ""
@@ -107,32 +135,4 @@ func printDIE(die *DIE, depth int, data *dwarf.Data) {
 	for _, child := range die.Children {
 		printDIE(child, depth+2, data)
 	}
-}
-
-func Indent(indent string) string {
-	return indent + "  "
-}
-
-// filterDIE recursively filters DIEs based on a regex pattern
-func filterDIE(die *DIE, pattern *regexp.Regexp) []*DIE {
-	var matches []*DIE
-
-	// Check if current DIE matches
-	for _, field := range die.Entry.Field {
-		if field.Attr == dwarf.AttrName {
-			if name, ok := field.Val.(string); ok {
-				if pattern.MatchString(name) {
-					matches = append(matches, die)
-					break
-				}
-			}
-		}
-	}
-
-	// Recursively check children
-	for _, child := range die.Children {
-		matches = append(matches, filterDIE(child, pattern)...)
-	}
-
-	return matches
 }
