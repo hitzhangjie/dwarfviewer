@@ -347,21 +347,37 @@ function showDieDetails(die, parentDie = null) {
     const detailsContent = document.createElement('div');
 
     // Add tag
-    const tagElement = document.createElement('h2');
+    const tagElement = document.createElement('h3');
     tagElement.textContent = `Tag: ${DWARF_TAGS[die.Entry.Tag] || `Unknown Tag (${die.Entry.Tag})`}`;
     detailsContent.appendChild(tagElement);
 
-    // Add attributes
-    die.Entry.Field.forEach(field => {
-        const attrElement = document.createElement('div');
-        attrElement.className = 'attribute';
-        const attrName = DWARF_ATTRS[field.Attr] || `Unknown Attr (${field.Attr})`;
-        attrElement.innerHTML = `
-            <span class="attribute-name">${attrName}:</span>
-            <span class="attribute-value">${field.Val}</span>
-        `;
-        detailsContent.appendChild(attrElement);
-    });
+    // Add fields section
+    if (die.Entry.Field && die.Entry.Field.length > 0) {
+        const fieldsSection = document.createElement('div');
+        fieldsSection.className = 'fields-section';
+
+        const fieldsHeader = document.createElement('h3');
+        fieldsHeader.textContent = `Fields (${die.Entry.Field.length})`;
+        fieldsSection.appendChild(fieldsHeader);
+
+        die.Entry.Field.forEach(field => {
+            const attrElement = document.createElement('div');
+            attrElement.className = 'attribute';
+            const attrName = DWARF_ATTRS[field.Attr] || `Unknown Attr (${field.Attr})`;
+            attrElement.innerHTML = `
+                <span class="attribute-name">${attrName}:</span>
+                <span class="attribute-value">${field.Val}</span>
+            `;
+            fieldsSection.appendChild(attrElement);
+        });
+
+        detailsContent.appendChild(fieldsSection);
+    }
+
+    // Add offset
+    const offsetElement = document.createElement('h3');
+    offsetElement.textContent = `Offset: 0x${die.Entry.Offset.toString(16)}`;
+    detailsContent.appendChild(offsetElement);
 
     // Add children section if there are children
     if (die.Children && die.Children.length > 0) {
