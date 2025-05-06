@@ -195,10 +195,16 @@ function displayDIEs(diesToShow) {
         dieElement.onclick = () => showDieDetails(die);
 
         // Find the name attribute if it exists
-        const nameAttr = die.Entry.Field.find(field => field.Attr === 'Name');
-        const name = nameAttr ? nameAttr.Val : DWARF_TAGS[die.Entry.Tag] || `Unknown Tag (${die.Entry.Tag})`;
+        const nameAttr = die.Entry.Field.find(field => field.Attr === 0x03);
+        const tagName = DWARF_TAGS[die.Entry.Tag] || `Unknown Tag (${die.Entry.Tag})`;
 
-        dieElement.textContent = name;
+        // Create display text combining tag and name
+        let displayText = tagName;
+        if (nameAttr) {
+            displayText += `: ${nameAttr.Val}`;
+        }
+
+        dieElement.textContent = displayText;
         dieList.appendChild(dieElement);
     });
 }
