@@ -381,14 +381,17 @@ function showDieDetails(die, parentDie = null) {
             attrContainer.appendChild(attrNameSpan);
             attrContainer.appendChild(attrValueSpan);
 
+            let notExpandedIcon = '||▶';
+            let hasExpandedIcon = '▼';
+
             // If this is a DW_AT_type attribute, add an expandable arrow
             if (field.Attr === 0x49) { // DW_AT_type
                 const expandButton = document.createElement('span');
                 expandButton.className = 'expand-button';
-                expandButton.textContent = '▶';
+                expandButton.textContent = notExpandedIcon;
                 expandButton.onclick = async (e) => {
                     e.stopPropagation();
-                    const isExpanded = expandButton.textContent === '▼';
+                    const isExpanded = expandButton.textContent === hasExpandedIcon;
 
                     if (!isExpanded) {
                         // Fetch the referenced DIE
@@ -404,7 +407,7 @@ function showDieDetails(die, parentDie = null) {
                             showDieDetails(referencedDie, die);
 
                             // Update the expand button
-                            expandButton.textContent = '▼';
+                            expandButton.textContent = hasExpandedIcon;
                         } catch (error) {
                             console.error('Error fetching referenced DIE:', error);
                         }
