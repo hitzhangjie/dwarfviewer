@@ -2,6 +2,7 @@ package main
 
 import (
 	"debug/dwarf"
+	"embed"
 	"encoding/json"
 	"flag"
 	"fmt"
@@ -12,6 +13,9 @@ import (
 
 	"github.com/hitzhangjie/dwarfviewer/parser"
 )
+
+//go:embed static
+var staticFiles embed.FS
 
 func main() {
 	// Parse command line arguments
@@ -76,7 +80,8 @@ func main() {
 		http.HandleFunc("/api/dies/type/", func(w http.ResponseWriter, r *http.Request) {
 			serveTypeDIE(w, r, rootDIEs, dwarfData)
 		})
-		http.Handle("/static/", http.StripPrefix("/static/", http.FileServer(http.Dir("static"))))
+		// Serve static files from embedded filesystem
+		http.Handle("/static/", http.FileServer(http.FS(staticFiles)))
 
 		fmt.Println("Starting web server at http://localhost:8080")
 		if err := http.ListenAndServe(":8080", nil); err != nil {
@@ -115,7 +120,13 @@ func main() {
 }
 
 func serveIndex(w http.ResponseWriter, r *http.Request) {
-	http.ServeFile(w, r, "static/index.html")
+	content, err := staticFiles.ReadFile("static/index.html")
+	if err != nil {
+		http.Error(w, "Error reading index.html", http.StatusInternalServerError)
+		return
+	}
+	w.Header().Set("Content-Type", "text/html")
+	w.Write(content)
 }
 
 func serveDIEs(w http.ResponseWriter, r *http.Request, dies []*DIE, dwarfData *dwarf.Data) {
