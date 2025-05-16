@@ -67,7 +67,7 @@ const DWARF_TAGS = {
     0x48: "DW_TAG_call_site",
     0x49: "DW_TAG_call_site_parameter",
     0x4A: "DW_TAG_skeleton_unit",
-    0x4B: "DW_TAG_immutable_type"
+    0x4B: "DW_TAG_immutable_type",
 };
 
 // DWARF Attribute mappings
@@ -192,7 +192,26 @@ const DWARF_ATTRS = {
     0x89: "DW_AT_export_symbols",
     0x8A: "DW_AT_deleted",
     0x8B: "DW_AT_defaulted",
-    0x8C: "DW_AT_loclists_base"
+    0x8C: "DW_AT_loclists_base",
+
+    // go specific type attributes, see go/src/cmd/internal/dwarf/dwarf.go
+    0x2900: "DW_AT_go_kind",
+    0x2901: "DW_AT_go_key",
+    0x2902: "DW_AT_go_elem",
+
+    // attributes for DW_TAG_member of a struct type.
+    // Nonzero value indicates that the struct field is an embedded field.
+    0x2903: "DW_AT_go_embedded_field",
+    0x2904: "DW_AT_go_runtime_type",
+
+    // Attribute for DW_TAG_compile_unit
+    0x2905: "DW_AT_go_package_name",
+    // Attribute for DW_TAG_typedef_type, index of the dictionary entry describing the real type of this type shape
+    0x2906: "DW_AT_go_dict_index",
+    // Attribute for DW_TAG_variable, offset in the closure struct where this captured variable resides
+    0x2907: "DW_AT_go_closure_offset",
+    // params and locals; not emitted
+    253: "DW_AT_internal_location"
 };
 
 let dies = [];
