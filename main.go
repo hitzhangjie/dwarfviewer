@@ -309,30 +309,63 @@ NextRootDIE:
 
 // serveLineTable handles requests for line table data
 func serveLineTable(w http.ResponseWriter, r *http.Request, dwarfData *dwarf.Data) {
-	lineReader, err := dwarfData.LineReader(nil)
-	if err != nil {
-		http.Error(w, fmt.Sprintf("Error reading line table: %v", err), http.StatusInternalServerError)
-		return
-	}
+	// Get the reader for all DIEs
+	reader := dwarfData.Reader()
 
-	// Read all line table entries
-	var entries []dwarf.LineEntry
+	// Create a map to store line table entries by compilation unit
+	lineTableEntries := make(map[string][]dwarf.LineEntry)
+
+	// Traverse through all compilation units
 	for {
-		var entry dwarf.LineEntry
-		err := lineReader.Next(&entry)
+		entry, err := reader.Next()
 		if err != nil {
+			http.Error(w, fmt.Sprintf("Error reading DIE: %v", err), http.StatusInternalServerError)
+			return
+		}
+		if entry == nil {
 			break
 		}
-		entries = append(entries, entry)
+
+		// Only process compilation units
+		if entry.Tag != dwarf.TagCompileUnit {
+			continue
+		}
+
+		// Get compilation unit name
+		name := entry.Val(dwarf.AttrName)
+		if name == nil {
+			name = "unknown"
+		}
+		cuName := name.(string)
+
+		// Get line table reader for this compilation unit
+		lineReader, err := dwarfData.LineReader(entry)
+		if err != nil {
+			http.Error(w, fmt.Sprintf("Error reading line table for %s: %v", cuName, err), http.StatusInternalServerError)
+			return
+		}
+
+		// Read all line table entries for this compilation unit
+		var entries []dwarf.LineEntry
+		for {
+			var entry dwarf.LineEntry
+			err := lineReader.Next(&entry)
+			if err != nil {
+				break
+			}
+			entries = append(entries, entry)
+		}
+
+		// Sort entries by address
+		sort.Slice(entries, func(i, j int) bool {
+			return entries[i].Address < entries[j].Address
+		})
+
+		lineTableEntries[cuName] = entries
 	}
 
-	// Sort entries by address
-	sort.Slice(entries, func(i, j int) bool {
-		return entries[i].Address < entries[j].Address
-	})
-
 	// Return the entries as JSON
-	jsonData, err := json.Marshal(entries)
+	jsonData, err := json.Marshal(lineTableEntries)
 	if err != nil {
 		http.Error(w, "Error converting line table to JSON", http.StatusInternalServerError)
 		return

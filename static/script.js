@@ -388,6 +388,7 @@ let dies = [];
 let selectedDie = null;
 let dieNavigationPath = []; // Track the navigation path
 let currentView = 'info'; // Track current view mode
+let compilationUnits = []; // Store compilation units for line table view
 
 // Load DIEs when the page loads
 window.onload = async function () {
@@ -397,7 +398,11 @@ window.onload = async function () {
     const searchInput = document.getElementById('searchInput');
     searchInput.addEventListener('keypress', function (event) {
         if (event.key === 'Enter') {
-            searchDIEs();
+            if (currentView === 'info') {
+                searchDIEs();
+            } else if (currentView === 'line') {
+                filterCompilationUnits();
+            }
         }
     });
 };
@@ -405,7 +410,14 @@ window.onload = async function () {
 // Change view mode
 async function changeView() {
     const viewSelect = document.getElementById('viewSelect');
+    const searchInput = document.getElementById('searchInput');
     currentView = viewSelect.value;
+
+    // Update search placeholder based on view
+    searchInput.placeholder = currentView === 'info' ? 'Search DIEs' : 'Search Compilation Unit';
+    
+    // Clear search input
+    searchInput.value = '';
 
     if (currentView === 'info') {
         await loadDIEs();
@@ -419,22 +431,65 @@ async function loadLineTable() {
     try {
         const response = await fetch('/api/line-table');
         const entries = await response.json();
-        displayLineTable(entries);
+        
+        // Store compilation units and their entries
+        compilationUnits = Object.entries(entries).map(([name, entries]) => ({
+            name,
+            entries
+        }));
+        
+        // Display compilation units in sidebar
+        displayCompilationUnits(compilationUnits);
+        
+        // Clear the details view
+        const dieContent = document.getElementById('dieContent');
+        dieContent.innerHTML = '';
     } catch (error) {
         console.error('Error loading line table:', error);
     }
 }
 
-// Display line table entries
-function displayLineTable(entries) {
+// Display compilation units in the sidebar
+function displayCompilationUnits(units) {
     const dieList = document.getElementById('dieList');
-    const dieDetails = document.getElementById('dieDetails');
-    const dieNavigation = document.getElementById('dieNavigation');
-    const dieContent = document.getElementById('dieContent');
+    dieList.innerHTML = '';
 
-    // Clear navigation and content
-    dieNavigation.innerHTML = '';
+    units.forEach(unit => {
+        const unitElement = document.createElement('div');
+        unitElement.className = 'die-item';
+        unitElement.onclick = () => showLineEntries(unit);
+
+        unitElement.textContent = unit.name;
+        dieList.appendChild(unitElement);
+    });
+}
+
+// Filter compilation units based on search input
+function filterCompilationUnits() {
+    const searchInput = document.getElementById('searchInput');
+    const pattern = searchInput.value.trim().toLowerCase();
+
+    const filteredUnits = compilationUnits.filter(unit => 
+        unit.name.toLowerCase().includes(pattern)
+    );
+
+    displayCompilationUnits(filteredUnits);
+}
+
+// Show line entries for a compilation unit
+function showLineEntries(unit) {
+    const dieContent = document.getElementById('dieContent');
+    const dieNavigation = document.getElementById('dieNavigation');
+    
+    // Clear previous content
     dieContent.innerHTML = '';
+    dieNavigation.innerHTML = '';
+
+    // Create navigation breadcrumb
+    const breadcrumb = document.createElement('span');
+    breadcrumb.className = 'navigation-item';
+    breadcrumb.textContent = unit.name;
+    dieNavigation.appendChild(breadcrumb);
 
     // Create table for line entries
     const table = document.createElement('table');
@@ -453,12 +508,12 @@ function displayLineTable(entries) {
 
     // Create table body
     const tbody = document.createElement('tbody');
-    entries.forEach(entry => {
+    unit.entries.forEach(entry => {
         const row = document.createElement('tr');
         [
             `0x${entry.Address.toString(16).padStart(8, '0')}`,
             entry.Line,
-            entry.File,
+            entry.File.Name,
             entry.Column,
             entry.IsStmt,
             entry.BasicBlock
@@ -471,7 +526,6 @@ function displayLineTable(entries) {
     });
     table.appendChild(tbody);
 
-    // Add table to content
     dieContent.appendChild(table);
 }
 
