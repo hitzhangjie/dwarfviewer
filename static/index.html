@@ -12,9 +12,18 @@
     <div class="container">
         <div class="header">
             <h1>DWARF DIE Viewer</h1>
-            <div class="search-box">
-                <input type="text" id="searchInput" placeholder="Search DIEs...">
-                <button onclick="searchDIEs()">Search</button>
+            <div class="controls">
+                <div class="view-selector">
+                    <label for="viewSelect">View:</label>
+                    <select id="viewSelect" onchange="changeView()">
+                        <option value="info">Debug Info</option>
+                        <option value="line">Line Table</option>
+                    </select>
+                </div>
+                <div class="search-box">
+                    <input type="text" id="searchInput" placeholder="Search DIEs...">
+                    <button onclick="searchDIEs()">Search</button>
+                </div>
             </div>
         </div>
         <div class="content">

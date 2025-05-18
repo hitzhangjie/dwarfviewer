@@ -44,3 +44,15 @@ func (p *ELFParser) GetDWARF() (*dwarf.Data, error) {
 	}
 	return p.file.DWARF()
 }
+
+// GetLineReader 获取ELF文件的DWARF行号表读取器
+func (p *ELFParser) GetLineReader() (*dwarf.LineReader, error) {
+	if p.file == nil {
+		return nil, fmt.Errorf("file not opened")
+	}
+	dwarfData, err := p.file.DWARF()
+	if err != nil {
+		return nil, err
+	}
+	return dwarfData.LineReader(nil)
+}

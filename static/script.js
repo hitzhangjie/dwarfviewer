@@ -387,6 +387,7 @@ const DWARF_OPS = {
 let dies = [];
 let selectedDie = null;
 let dieNavigationPath = []; // Track the navigation path
+let currentView = 'info'; // Track current view mode
 
 // Load DIEs when the page loads
 window.onload = async function () {
@@ -401,6 +402,79 @@ window.onload = async function () {
     });
 };
 
+// Change view mode
+async function changeView() {
+    const viewSelect = document.getElementById('viewSelect');
+    currentView = viewSelect.value;
+
+    if (currentView === 'info') {
+        await loadDIEs();
+    } else if (currentView === 'line') {
+        await loadLineTable();
+    }
+}
+
+// Load line table data
+async function loadLineTable() {
+    try {
+        const response = await fetch('/api/line-table');
+        const entries = await response.json();
+        displayLineTable(entries);
+    } catch (error) {
+        console.error('Error loading line table:', error);
+    }
+}
+
+// Display line table entries
+function displayLineTable(entries) {
+    const dieList = document.getElementById('dieList');
+    const dieDetails = document.getElementById('dieDetails');
+    const dieNavigation = document.getElementById('dieNavigation');
+    const dieContent = document.getElementById('dieContent');
+
+    // Clear navigation and content
+    dieNavigation.innerHTML = '';
+    dieContent.innerHTML = '';
+
+    // Create table for line entries
+    const table = document.createElement('table');
+    table.className = 'line-table';
+
+    // Create table header
+    const thead = document.createElement('thead');
+    const headerRow = document.createElement('tr');
+    ['Address', 'Line', 'File', 'Column', 'IsStmt', 'Basic Block'].forEach(text => {
+        const th = document.createElement('th');
+        th.textContent = text;
+        headerRow.appendChild(th);
+    });
+    thead.appendChild(headerRow);
+    table.appendChild(thead);
+
+    // Create table body
+    const tbody = document.createElement('tbody');
+    entries.forEach(entry => {
+        const row = document.createElement('tr');
+        [
+            `0x${entry.Address.toString(16).padStart(8, '0')}`,
+            entry.Line,
+            entry.File,
+            entry.Column,
+            entry.IsStmt,
+            entry.BasicBlock
+        ].forEach(text => {
+            const td = document.createElement('td');
+            td.textContent = text;
+            row.appendChild(td);
+        });
+        tbody.appendChild(row);
+    });
+    table.appendChild(tbody);
+
+    // Add table to content
+    dieContent.appendChild(table);
+}
+
 // Load DIEs from the server
 async function loadDIEs() {
     try {
@@ -414,6 +488,10 @@ async function loadDIEs() {
 
 // Search DIEs based on input
 async function searchDIEs() {
+    if (currentView !== 'info') {
+        return;
+    }
+
     const searchInput = document.getElementById('searchInput');
     const pattern = searchInput.value.trim();
 

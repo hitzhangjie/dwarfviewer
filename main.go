@@ -9,7 +9,9 @@ import (
 	"net/http"
 	"os"
 	"regexp"
+	"sort"
 	"strconv"
+	"text/tabwriter"
 
 	"github.com/hitzhangjie/dwarfviewer/parser"
 )
@@ -22,6 +24,7 @@ func main() {
 	filePath := flag.String("file", "", "Path to the binary file")
 	pattern := flag.String("pattern", "", "Regex pattern to filter DIEs")
 	webUI := flag.Bool("webui", false, "Display DIEs in web interface")
+	view := flag.String("view", "info", "View mode: info (default) or line")
 	flag.Parse()
 
 	if *filePath == "" {
@@ -80,6 +83,9 @@ func main() {
 		http.HandleFunc("/api/dies/type/", func(w http.ResponseWriter, r *http.Request) {
 			serveTypeDIE(w, r, rootDIEs, dwarfData)
 		})
+		http.HandleFunc("/api/line-table", func(w http.ResponseWriter, r *http.Request) {
+			serveLineTable(w, r, dwarfData)
+		})
 		// Serve static files from embedded filesystem
 		http.Handle("/static/", http.FileServer(http.FS(staticFiles)))
 
@@ -92,6 +98,15 @@ func main() {
 	}
 
 	// termui mode
+	if *view == "line" {
+		// Get line table information from the DWARF data
+		if err := printLineTable(dwarfData); err != nil {
+			fmt.Printf("Error printing line table: %v\n", err)
+			os.Exit(1)
+		}
+		return
+	}
+
 	var matches []*DIE
 	if *pattern != "" {
 		re, err := regexp.Compile(*pattern)
@@ -117,6 +132,87 @@ func main() {
 			fmt.Println("---")
 		}
 	}
+}
+
+// Get line table information from the DWARF data and print it
+func printLineTable(dwarfData *dwarf.Data) error {
+	// Get the reader for all DIEs
+	reader := dwarfData.Reader()
+
+	// Traverse through all compilation units
+	for {
+		entry, err := reader.Next()
+		if err != nil {
+			return fmt.Errorf("error reading DIE: %v", err)
+		}
+		if entry == nil {
+			break
+		}
+
+		// Only process compilation units
+		if entry.Tag != dwarf.TagCompileUnit {
+			continue
+		}
+
+		// Get compilation unit name
+		name := entry.Val(dwarf.AttrName)
+		if name == nil {
+			name = "unknown"
+		}
+
+		// Print compilation unit header
+		fmt.Printf("\nCompilation Unit: ```%s```\n\n", name)
+
+		// Print line table for this compilation unit
+		if err := printCompilationUnitLineTable(dwarfData, entry); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+// printCompilationUnitLineTable prints the line table entries for a single compilation unit
+func printCompilationUnitLineTable(dwarfData *dwarf.Data, entry *dwarf.Entry) error {
+	// Create a new tabwriter
+	w := tabwriter.NewWriter(os.Stdout, 0, 0, 2, ' ', tabwriter.Debug)
+	defer w.Flush()
+
+	fmt.Fprintln(w, "Address\tFile\tLine\tColumn\tIsStmt\tBasic Block")
+	fmt.Fprintln(w, "-------\t----\t----\t------\t-------\t-----------")
+
+	// Get line table reader for this compilation unit
+	lineReader, err := dwarfData.LineReader(entry)
+	if err != nil {
+		return fmt.Errorf("read linetable fail: %v", err)
+	}
+
+	// Read all line table entries for this compilation unit
+	var entries []dwarf.LineEntry
+	for {
+		var entry dwarf.LineEntry
+		err := lineReader.Next(&entry)
+		if err != nil {
+			break
+		}
+		entries = append(entries, entry)
+	}
+
+	// Sort entries by address
+	sort.Slice(entries, func(i, j int) bool {
+		return entries[i].Address < entries[j].Address
+	})
+
+	// Print sorted entries
+	for _, entry := range entries {
+		fmt.Fprintf(w, "0x%08x\t%s\t%d\t%d\t%v\t%v\n",
+			entry.Address,
+			entry.File.Name,
+			entry.Line,
+			entry.Column,
+			entry.IsStmt,
+			entry.BasicBlock)
+	}
+	return nil
 }
 
 func serveIndex(w http.ResponseWriter, r *http.Request) {
@@ -204,6 +300,41 @@ NextRootDIE:
 	jsonData, err := json.Marshal(foundDie)
 	if err != nil {
 		http.Error(w, "Error converting DIE to JSON", http.StatusInternalServerError)
+		return
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	w.Write(jsonData)
+}
+
+// serveLineTable handles requests for line table data
+func serveLineTable(w http.ResponseWriter, r *http.Request, dwarfData *dwarf.Data) {
+	lineReader, err := dwarfData.LineReader(nil)
+	if err != nil {
+		http.Error(w, fmt.Sprintf("Error reading line table: %v", err), http.StatusInternalServerError)
+		return
+	}
+
+	// Read all line table entries
+	var entries []dwarf.LineEntry
+	for {
+		var entry dwarf.LineEntry
+		err := lineReader.Next(&entry)
+		if err != nil {
+			break
+		}
+		entries = append(entries, entry)
+	}
+
+	// Sort entries by address
+	sort.Slice(entries, func(i, j int) bool {
+		return entries[i].Address < entries[j].Address
+	})
+
+	// Return the entries as JSON
+	jsonData, err := json.Marshal(entries)
+	if err != nil {
+		http.Error(w, "Error converting line table to JSON", http.StatusInternalServerError)
 		return
 	}
 

@@ -17,7 +17,7 @@ test100:
 	./dwarfviewer -file tests/hello -pattern 'main'
 
 testdata:
-	go build -gcflags "all=-N -l" -o tests/hello tests/hello.go
+	GOOS=linux GOARCH=amd64 go build -gcflags "all=-N -l" -o tests/hello tests/hello.go
 
 clean:
 	rm dwarfviewer tests/hello
